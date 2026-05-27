@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { PlayerList } from "@/components/player-list";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,11 +11,18 @@ import { useRoom } from "@/lib/use-room";
 
 export default function LobbyPage() {
   const params = useParams<{ code: string }>();
+  const router = useRouter();
   const code = (params.code ?? "").toUpperCase();
   const { room, error } = useRoom(code);
   const currentUserId = getOrCreatePlayerId();
 
   const [actionError, setActionError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (room?.phase === "reveal") {
+      router.push(`/room/${code}/reveal`);
+    }
+  }, [code, room?.phase, router]);
 
   const isHost = room?.hostId === currentUserId;
   const canStart =

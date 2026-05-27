@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/screen";
 import { getSocket, emitWithAck } from "@/lib/socket";
-import { getOrCreatePlayerId, saveName } from "@/lib/storage";
+import { getOrCreatePlayerId, getSavedName, saveName } from "@/lib/storage";
 
 export default function CreateRoomPage() {
   const router = useRouter();
-  const [name, setName] = React.useState("");
+  const [name, setName] = React.useState(() =>
+    typeof window === "undefined" ? "" : getSavedName(),
+  );
   const [mode, setMode] = React.useState<"random" | "choose">("random");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);

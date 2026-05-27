@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { RoleCard } from "@/components/role-card";
 import { Button } from "@/components/ui/button";
 import type { Role } from "@/lib/roles";
@@ -10,6 +10,7 @@ import { getSocket, emitWithAck } from "@/lib/socket";
 
 export default function RoleRevealPage() {
   const params = useParams<{ code: string }>();
+  const router = useRouter();
   const code = (params.code ?? "").toUpperCase();
   const { room, connected, joined, error: joinError } = useRoom(code);
 
@@ -50,6 +51,12 @@ export default function RoleRevealPage() {
     const timeout = window.setTimeout(() => void fetchRole(), 0);
     return () => window.clearTimeout(timeout);
   }, [connected, fetchRole, joined, loading, role, room?.phase]);
+
+  React.useEffect(() => {
+    if (room?.phase === "lobby") {
+      router.push(`/room/${code}/lobby`);
+    }
+  }, [code, room?.phase, router]);
 
   const restartMatch = async () => {
     setActionError(null);

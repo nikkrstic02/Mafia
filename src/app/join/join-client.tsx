@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/screen";
 import { getSocket, emitWithAck } from "@/lib/socket";
-import { getOrCreatePlayerId, saveName } from "@/lib/storage";
+import { getOrCreatePlayerId, getSavedName, saveName } from "@/lib/storage";
 
 export default function JoinClient() {
   const router = useRouter();
@@ -18,7 +18,9 @@ export default function JoinClient() {
   const testPlayerId = searchParams.get("testPlayerId");
   const auto = searchParams.get("auto") === "1";
 
-  const [name, setName] = React.useState(initialName);
+  const [name, setName] = React.useState(
+    initialName || (typeof window === "undefined" ? "" : getSavedName()),
+  );
   const [code, setCode] = React.useState(initialCode);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -26,7 +28,11 @@ export default function JoinClient() {
   const doJoin = React.useCallback(
     async (nextCode?: string, nextName?: string) => {
       setError(null);
-      const roomCode = (nextCode ?? code).trim().toUpperCase();
+      const roomCode = (nextCode ?? code)
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 8);
       const nickname = (nextName ?? name).trim();
       if (!roomCode) return setError("Enter a room code.");
       if (!nickname) return setError("Enter a nickname.");
@@ -76,7 +82,11 @@ export default function JoinClient() {
               label="Room code"
               placeholder="ABCDE"
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              onChange={(e) =>
+                setCode(
+                  e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8),
+                )
+              }
               hint="Ask the host for the room code."
               inputMode="text"
               autoCapitalize="characters"
