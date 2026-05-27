@@ -22,3 +22,7 @@ export function saveName(name: string) {
   window.localStorage.setItem(KEY_NAME, name);
 }
 
+export function savePlayerId(playerId: string) {
+  window.localStorage.setItem(KEY_PLAYER_ID, playerId);
+}
+

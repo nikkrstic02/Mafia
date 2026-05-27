@@ -7,7 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/screen";
 import { getSocket, emitWithAck } from "@/lib/socket";
-import { getOrCreatePlayerId, getSavedName, saveName } from "@/lib/storage";
+import {
+  getOrCreatePlayerId,
+  getSavedName,
+  saveName,
+  savePlayerId,
+} from "@/lib/storage";
 
 export default function JoinClient() {
   const router = useRouter();
@@ -40,6 +45,7 @@ export default function JoinClient() {
       setLoading(true);
       saveName(nickname);
       const playerId = testPlayerId ?? getOrCreatePlayerId();
+      if (testPlayerId) savePlayerId(testPlayerId);
 
       try {
         const socket = getSocket();

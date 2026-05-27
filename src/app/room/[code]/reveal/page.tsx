@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { Role } from "@/lib/roles";
 import { useRoom } from "@/lib/use-room";
 import { getSocket, emitWithAck } from "@/lib/socket";
+import { getOrCreatePlayerId } from "@/lib/storage";
 
 export default function RoleRevealPage() {
   const params = useParams<{ code: string }>();
@@ -25,12 +26,13 @@ export default function RoleRevealPage() {
     setActionError(null);
     try {
       const socket = getSocket();
+      const playerId = getOrCreatePlayerId();
       const res = await emitWithAck<{
         ok: boolean;
         error?: string;
         role?: Role;
         mafiaMates?: string[];
-      }>(socket, "game:requestRole", { code });
+      }>(socket, "game:requestRole", { code, playerId });
 
       if (res.ok && res.role) {
         setRole(res.role);
