@@ -62,12 +62,32 @@ export function useRoom(code: string) {
       }
     };
 
+    const leave = async () => {
+      try {
+        const playerId = getOrCreatePlayerId();
+        await emitWithAck<Ack>(socket, "room:leave", { code, playerId });
+      } catch {
+        // Ignore errors on leave
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        void leave();
+      } else {
+        void join().then(fetchState);
+      }
+    };
+
     void join().then(fetchState);
     const interval = window.setInterval(fetchState, 1500);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       stopped = true;
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      void leave();
     };
   }, [code]);
 

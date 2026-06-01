@@ -12,6 +12,7 @@ export function emitWithAck<TRes>(
   const routeByEvent: Record<string, string> = {
     "room:create": "/api/room/create",
     "room:join": "/api/room/join",
+    "room:leave": "/api/room/leave",
     "room:setNarrator": "/api/room/set-narrator",
     "game:start": "/api/room/start",
     "game:requestRole": "/api/room/request-role",

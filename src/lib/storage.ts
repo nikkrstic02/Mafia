@@ -3,26 +3,38 @@
 const KEY_PLAYER_ID = "mafia:playerId";
 const KEY_NAME = "mafia:name";
 
+function getStorage() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage;
+}
+
 export function getOrCreatePlayerId() {
-  const existing = window.localStorage.getItem(KEY_PLAYER_ID);
+  const storage = getStorage();
+  if (!storage) {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+  const existing = storage.getItem(KEY_PLAYER_ID);
   if (existing) return existing;
   const id =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  window.localStorage.setItem(KEY_PLAYER_ID, id);
+  storage.setItem(KEY_PLAYER_ID, id);
   return id;
 }
 
 export function getSavedName() {
-  return window.localStorage.getItem(KEY_NAME) ?? "";
+  const storage = getStorage();
+  return storage?.getItem(KEY_NAME) ?? "";
 }
 
 export function saveName(name: string) {
-  window.localStorage.setItem(KEY_NAME, name);
+  const storage = getStorage();
+  storage?.setItem(KEY_NAME, name);
 }
 
 export function savePlayerId(playerId: string) {
-  window.localStorage.setItem(KEY_PLAYER_ID, playerId);
+  const storage = getStorage();
+  storage?.setItem(KEY_PLAYER_ID, playerId);
 }
 

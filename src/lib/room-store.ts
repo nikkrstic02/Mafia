@@ -136,11 +136,34 @@ async function saveRoom(room: Room) {
   await redis.set(roomKey(room.code), room, { ex: ROOM_TTL_SECONDS });
 }
 
+async function deleteRoom(code: string) {
+  if (!redis) {
+    localRooms.delete(code);
+    return;
+  }
+  await redis.del(roomKey(code));
+}
+
+async function cleanupEmptyRooms() {
+  if (!redis) {
+    for (const [code, room] of localRooms.entries()) {
+      if (Object.keys(room.players).length === 0) {
+        localRooms.delete(code);
+      }
+    }
+    return;
+  }
+  // For Redis, this would need a scan operation
+  // For now, local cleanup is handled above
+}
+
 export async function createRoomAction(payload: {
   playerId?: string;
   name?: string;
   narratorMode?: NarratorMode;
 }) {
+  await cleanupEmptyRooms();
+
   const playerId = String(payload?.playerId || "");
   const name = normalizeName(payload?.name);
   const narratorMode = payload?.narratorMode === "choose" ? "choose" : "random";
@@ -233,10 +256,22 @@ export async function joinRoomAction(payload: {
 }
 
 export async function getRoomStateAction(payload: { code?: string; playerId?: string }) {
+  // Periodically cleanup empty rooms
+  if (Math.random() < 0.1) {
+    await cleanupEmptyRooms();
+  }
+
   const code = String(payload?.code || "").toUpperCase();
   const playerId = String(payload?.playerId || "");
   const room = await getRoom(code);
   if (!room) return { ok: false as const, error: "Room not found." };
+
+  // Delete room if empty
+  if (Object.keys(room.players).length === 0) {
+    await deleteRoom(code);
+    return { ok: false as const, error: "Room not found." };
+  }
+
   await saveRoom(room);
   return { ok: true as const, room: getPublicRoomState(room, playerId || undefined) };
 }
@@ -329,6 +364,48 @@ export async function restartGameAction(payload: { code?: string }) {
   room.rolesById = null;
   if (room.narratorMode === "choose") room.narratorId = null;
   await saveRoom(room);
+  return { ok: true as const };
+}
+
+export async function leaveRoomAction(payload: { code?: string; playerId?: string }) {
+  const code = String(payload?.code || "").toUpperCase();
+  const playerId = String(payload?.playerId || "");
+  const room = await getRoom(code);
+  if (!room) return { ok: false as const, error: "Room not found." };
+  if (!playerId) return { ok: false as const, error: "Missing playerId." };
+
+  const player = room.players[playerId];
+  if (player) {
+    player.connected = false;
+    await saveRoom(room);
+  }
+  return { ok: true as const };
+}
+
+export async function removePlayerAction(payload: { code?: string; playerId?: string }) {
+  const code = String(payload?.code || "").toUpperCase();
+  const playerId = String(payload?.playerId || "");
+  const room = await getRoom(code);
+  if (!room) return { ok: false as const, error: "Room not found." };
+  if (!playerId) return { ok: false as const, error: "Missing playerId." };
+
+  delete room.players[playerId];
+
+  // If removed player was host, assign to next player
+  if (room.hostId === playerId) {
+    const remainingPlayers = Object.values(room.players);
+    if (remainingPlayers.length > 0) {
+      room.hostId = remainingPlayers[0].id;
+    }
+  }
+
+  // Delete room if no players left
+  if (Object.keys(room.players).length === 0) {
+    await deleteRoom(room.code);
+  } else {
+    await saveRoom(room);
+  }
+
   return { ok: true as const };
 }
 
